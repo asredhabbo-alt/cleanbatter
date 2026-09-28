@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chit — Order Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1EDE4; --ink:#1E1B16; --ink-soft:#6B6355;
+    --line:#D8D0BE; --card:#FFFFFB;
+    --wait:#6A6F8C; --new:#B0483C; --prep:#B8863B; --ready:#3E7B54; --done:#8A8375;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#17140F; --ink:#EEE9DD; --ink-soft:#A69C87; --line:#332D22; --card:#211D16;
+      --wait:#8B90B8; --new:#E07868; --prep:#E0A85D; --ready:#63B37D; --done:#8A8375;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#17140F; --ink:#EEE9DD; --ink-soft:#A69C87; --line:#332D22; --card:#211D16;
+    --wait:#8B90B8; --new:#E07868; --prep:#E0A85D; --ready:#63B37D; --done:#8A8375;
+  }
+  html,body{height:100%;} html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;}
+  h1,h2{margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,textarea{font-family:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:14px;width:100%;}
+
+  header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);z-index:5;}
+  header h1{font-size:19px;letter-spacing:.01em;}
+  .switch{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;}
+  .switch button{background:none;border:none;padding:7px 16px;font-size:13px;color:var(--ink-soft);}
+  .switch button.active{background:var(--ink);color:var(--paper);}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 20px 60px;}
+
+  .form-card{max-width:460px;margin:20px auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:24px;}
+  .form-card h2{font-size:22px;margin-bottom:4px;}
+  .form-card .sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:18px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+
+  .menu-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);}
+  .menu-row .nm{font-weight:500;}
+  .menu-row .pr{color:var(--ink-soft);font-size:13px;}
+  .qty{display:flex;align-items:center;gap:8px;}
+  .qty button{width:26px;height:26px;border:1px solid var(--line);background:none;border-radius:4px;color:var(--ink);}
+  .qty span{min-width:16px;text-align:center;}
+
+  .cart-total{display:flex;justify-content:space-between;padding:12px 0;margin-top:6px;border-top:1px solid var(--ink);font-weight:600;}
+  .submit-btn{width:100%;background:var(--new);color:#fff;border:none;border-radius:5px;padding:11px;font-size:15px;font-weight:600;margin-top:14px;}
+  .submit-btn:disabled{opacity:.4;cursor:default;}
+  .submit-btn:hover:not(:disabled){opacity:.92;}
+
+  .pay-card{text-align:center;}
+  .pay-card img{width:220px;height:220px;object-fit:contain;border:1px solid var(--line);border-radius:8px;margin:14px auto;background:#fff;}
+  .pay-amt{font-size:32px;font-family:'JetBrains Mono',monospace;margin:6px 0;}
+  .pay-steps{text-align:left;color:var(--ink-soft);font-size:13.5px;margin:14px 0;padding-left:18px;}
+  .back-link{background:none;border:none;color:var(--ink-soft);font-size:13px;text-decoration:underline;margin-top:8px;}
+
+  .confirm{max-width:460px;margin:20px auto;text-align:center;padding:40px 20px;}
+  .confirm .tag{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 22px;font-size:20px;margin:14px 0;}
+
+  .board{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+  @media (max-width:900px){ .board{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .board{grid-template-columns:1fr;} }
+  .col h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .ticket{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:5px;padding:12px 13px;margin-bottom:10px;}
+  .ticket .who{font-weight:600;font-size:14px;}
+  .ticket .when{color:var(--ink-soft);font-size:11.5px;margin-bottom:6px;}
+  .ticket ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;}
+  .ticket .amt{font-family:'JetBrains Mono',monospace;font-size:13px;margin-top:4px;}
+  .ticket-actions{display:flex;gap:6px;margin-top:10px;}
+  .ticket-actions button{flex:1;background:none;border:1px solid var(--line);border-radius:4px;padding:6px 4px;font-size:12px;color:var(--ink);}
+  .ticket-actions button:hover{border-color:var(--ink-soft);}
+  .empty-col{color:var(--ink-soft);font-size:13px;padding:8px 0;}
+  .banner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 64px);left:50%;transform:translateX(-50%);background:var(--new);color:#fff;padding:9px 18px;border-radius:20px;font-size:13.5px;z-index:10;box-shadow:0 4px 14px rgba(0,0,0,.2);}
+
+  .settings{max-width:520px;margin:0 auto 26px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 20px;}
+  .settings h3{font-size:15px;margin-bottom:10px;}
+  .settings summary{cursor:pointer;font-size:13px;color:var(--ink-soft);}
+  .mrow{display:grid;grid-template-columns:1fr 90px auto;gap:6px;margin-bottom:6px;}
+  .mrow button{background:none;border:1px solid var(--line);border-radius:4px;color:var(--ink-soft);}
+  .qr-preview{width:100px;height:100px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:#fff;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+let db=null, assets=null, user=null;
+let state={
+  view:'order', step:'menu', cart:{}, name:'', note:'',
+  menu:[], qrUrl:null,
+  orders:[], submitted:false, lastId:null, banner:null, canWrite:true, settingsOpen:false
+};
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML = `
+    <header>
+      <h1 class="mono">Chit</h1>
+      <div class="switch">
+        <button class="${state.view==='order'?'active':''}" id="toOrder">Order</button>
+        <button class="${state.view==='board'?'active':''}" id="toBoard">Kitchen board</button>
+      </div>
+    </header>
+    ${state.banner? `<div class="banner">${esc(state.banner)}</div>`:''}
+    <div class="wrap">
+      ${state.view==='order' ? renderOrder() : renderBoard()}
+    </div>
+  `;
+  bind();
+}
+
+function cartTotal(){
+  return Object.entries(state.cart).reduce((s,[i,q])=>s+(state.menu[i]?state.menu[i].price*q:0),0);
+}
+function cartLines(){
+  return Object.entries(state.cart).filter(([,q])=>q>0).map(([i,q])=>`${q}x ${state.menu[i].name}`);
+}
+
+function renderOrder(){
+  if(state.submitted){
+    return `<div class="confirm">
+      <div style="color:var(--ink-soft);font-size:13px;">ORDER SENT</div>
+      <div class="tag mono">#${state.lastId}</div>
+      <p style="color:var(--ink-soft);">We'll confirm your payment and start on it shortly. Thanks, ${esc(state.name)||'friend'}.</p>
+      <button class="submit-btn" style="max-width:200px;margin:10px auto 0;" id="newOrder">Place another</button>
+    </div>`;
+  }
+  if(state.step==='pay'){
+    const total = cartTotal();
+    return `<div class="form-card pay-card">
+      <h2>Scan to pay</h2>
+      <div class="pay-amt">$${total.toFixed(2)}</div>
+      ${state.qrUrl ? `<img src="${state.qrUrl}" alt="PayNow QR">` : `<p class="sub">Payment QR isn't set up yet — ask the owner.</p>`}
+      <ol class="pay-steps">
+        <li>Open your banking app and scan the QR above</li>
+        <li>Enter the amount shown ($${total.toFixed(2)}) — PayNow QR codes don't carry an amount</li>
+        <li>Complete the transfer, then tap "I've paid" below</li>
+      </ol>
+      <button class="submit-btn" id="ivePaid" ${!state.qrUrl||!state.canWrite?'disabled':''}>I've paid — send order</button>
+      <button class="back-link" id="backToMenu">← Back to menu</button>
+    </div>`;
+  }
+  const total = cartTotal();
+  return `
+    <div class="form-card">
+      <h2>Place an order</h2>
+      <div class="sub">Pick your items — you'll pay by PayNow before it's sent through.</div>
+      ${!state.canWrite ? `<p style="color:var(--new);font-size:13px;">This page can't accept orders from your account right now — ask the owner for edit access.</p>` : ''}
+      ${state.menu.length ? state.menu.map((m,i)=>`
+        <div class="menu-row">
+          <div><div class="nm">${esc(m.name)}</div><div class="pr">$${Number(m.price).toFixed(2)}</div></div>
+          <div class="qty">
+            <button data-qty="-1" data-i="${i}">−</button>
+            <span>${state.cart[i]||0}</span>
+            <button data-qty="1" data-i="${i}">+</button>
+          </div>
+        </div>`).join('') : `<p class="sub">No menu items yet — ask the owner to add some.</p>`}
+      <div class="cart-total"><span>Total</span><span class="mono">$${total.toFixed(2)}</span></div>
+      <div class="field" style="margin-top:14px;"><label>Name for the order</label><input id="ordName" value="${esc(state.name)}" placeholder="e.g. Aida"></div>
+      <div class="field"><label>Notes (optional)</label><textarea id="ordNote" rows="2" placeholder="Allergies, table number, etc.">${esc(state.note)}</textarea></div>
+      <button class="submit-btn" id="toPay" ${total<=0?'disabled':''}>Proceed to pay · $${total.toFixed(2)}</button>
+    </div>
+  `;
+}
+
+const COLS = [
+  {key:'Awaiting', label:'Awaiting payment check', color:'var(--wait)', next:'New', action:'Confirm payment'},
+  {key:'New', label:'New', color:'var(--new)', next:'Preparing', action:'Start preparing'},
+  {key:'Preparing', label:'Preparing', color:'var(--prep)', next:'Ready', action:'Mark ready'},
+  {key:'Ready', label:'Ready', color:'var(--ready)', next:'Completed', action:'Complete'},
+  {key:'Completed', label:'Completed', color:'var(--done)', next:null},
+];
+
+function renderBoard(){
+  const sorted = state.orders.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  return `
+    <details class="settings" ${state.settingsOpen?'open':''} id="settingsPanel">
+      <summary>Menu & PayNow QR settings</summary>
+      <h3 style="margin-top:14px;">Menu items</h3>
+      ${state.menu.map((m,i)=>`
+        <div class="mrow">
+          <input data-mname="${i}" value="${esc(m.name)}" placeholder="Item name">
+          <input data-mprice="${i}" type="number" step="0.01" value="${m.price}" placeholder="Price">
+          <button data-mdel="${i}">✕</button>
+        </div>`).join('')}
+      <div class="mrow"><input id="newMName" value="${esc(state.newMName||'')}" placeholder="New item name"><input id="newMPrice" type="number" step="0.01" value="${state.newMPrice||''}" placeholder="Price"><button id="addMenu">+</button></div>
+      ${state.menuError?`<div style="color:var(--new);font-size:12.5px;margin-top:4px;">${esc(state.menuError)}</div>`:''}
+      <h3 style="margin-top:18px;">PayNow QR code</h3>
+      <div style="display:flex;gap:12px;align-items:center;">
+        ${state.qrUrl?`<img class="qr-preview" src="${state.qrUrl}">`:''}
+        <input type="file" id="qrUpload" accept="image/*">
+      </div>
+    </details>
+    <div class="board">
+    ${COLS.map(col=>{
+      const list = sorted.filter(o=>(o.status||'Awaiting')===col.key);
+      return `<div class="col">
+        <h3><span class="dot" style="background:${col.color}"></span>${col.label} (${list.length})</h3>
+        ${list.length? list.map(o=>`
+          <div class="ticket" style="--c:${col.color}">
+            <div class="who">${esc(o.name)||'Guest'} <span class="mono" style="color:var(--ink-soft);font-weight:400;">#${o.id.slice(-4)}</span></div>
+            <div class="when">${timeAgo(o.createdAt)}</div>
+            <ul>${(o.items||[]).map(it=>`<li>${esc(it)}</li>`).join('')}</ul>
+            ${o.note?`<div class="note" style="color:var(--ink-soft);font-size:12.5px;font-style:italic;margin-top:4px;">${esc(o.note)}</div>`:''}
+            <div class="amt">$${Number(o.total||0).toFixed(2)}</div>
+            <div class="ticket-actions">
+              ${col.next?`<button data-advance="${o.id}" data-next="${col.next}">${col.action}</button>`:''}
+              <button data-remove="${o.id}">Remove</button>
+            </div>
+          </div>
+        `).join('') : `<div class="empty-col">Nothing here.</div>`}
+      </div>`;
+    }).join('')}
+    </div>
+  `;
+}
+
+function timeAgo(ts){
+  if(!ts) return '';
+  const s = Math.max(0, Math.round((Date.now()-ts)/1000));
+  if(s<60) return s+'s ago';
+  if(s<3600) return Math.round(s/60)+'m ago';
+  return Math.round(s/3600)+'h ago';
+}
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function saveMenu(){
+  if(!db) return;
+  try{ await db.doc('config/menu').set({ items: state.menu }); }catch(e){ console.error(e); }
+}
+async function saveQr(url){
+  if(!db) return;
+  try{ await db.doc('config/payment').set({ qrUrl: url }); }catch(e){ console.error(e); }
+}
+
+function bind(){
+  const app=document.getElementById('app');
+  app.querySelector('#toOrder')?.addEventListener('click', ()=>{ state.view='order'; render(); });
+  app.querySelector('#toBoard')?.addEventListener('click', ()=>{ state.view='board'; state.banner=null; render(); });
+  app.querySelector('#settingsPanel')?.addEventListener('toggle', e=>{ state.settingsOpen=e.target.open; });
+
+  app.querySelectorAll('[data-qty]').forEach(el=>el.addEventListener('click', ()=>{
+    const i=el.dataset.i, d=Number(el.dataset.qty);
+    state.cart[i] = Math.max(0, (state.cart[i]||0)+d);
+    render();
+  }));
+  app.querySelector('#ordName')?.addEventListener('input', e=>state.name=e.target.value);
+  app.querySelector('#ordNote')?.addEventListener('input', e=>state.note=e.target.value);
+  app.querySelector('#toPay')?.addEventListener('click', ()=>{ state.step='pay'; render(); });
+  app.querySelector('#backToMenu')?.addEventListener('click', ()=>{ state.step='menu'; render(); });
+
+  app.querySelector('#ivePaid')?.addEventListener('click', async ()=>{
+    const data = { name: state.name.trim(), items: cartLines(), note: state.note.trim(), total: cartTotal(), status:'Awaiting', createdAt: Date.now() };
+    if(db){
+      try{
+        const ref = await db.collection('orders').add(data);
+        state.lastId = ref.path.split('/').pop();
+      }catch(e){
+        if(e && e.code==='invalid_argument'){ state.canWrite=false; render(); return; }
+        console.error('order failed', e); return;
+      }
+    } else { state.lastId = Math.random().toString(36).slice(2,8); }
+    state.submitted=true; state.cart={}; state.note=''; state.step='menu'; render();
+  });
+  app.querySelector('#newOrder')?.addEventListener('click', ()=>{ state.submitted=false; render(); });
+
+  app.querySelectorAll('[data-advance]').forEach(el=>el.addEventListener('click', async ()=>{
+    if(!db) return;
+    try{ await db.collection('orders').doc(el.dataset.advance).update({status: el.dataset.next}); }catch(e){ console.error(e); }
+  }));
+  app.querySelectorAll('[data-remove]').forEach(el=>el.addEventListener('click', async ()=>{
+    if(!db) return;
+    try{ await db.collection('orders').doc(el.dataset.remove).delete(); }catch(e){ console.error(e); }
+  }));
+
+  app.querySelectorAll('[data-mname]').forEach(el=>el.addEventListener('input', e=>{ state.menu[el.dataset.mname].name = e.target.value; }));
+  app.querySelectorAll('[data-mprice]').forEach(el=>el.addEventListener('input', e=>{ state.menu[el.dataset.mprice].price = parseFloat(e.target.value)||0; }));
+  app.querySelectorAll('[data-mname]').forEach(el=>el.addEventListener('change', saveMenu));
+  app.querySelectorAll('[data-mprice]').forEach(el=>el.addEventListener('change', saveMenu));
+  app.querySelectorAll('[data-mdel]').forEach(el=>el.addEventListener('click', ()=>{ state.menu.splice(Number(el.dataset.mdel),1); saveMenu(); render(); }));
+  app.querySelector('#newMName')?.addEventListener('input', e=>{ state.newMName = e.target.value; });
+  app.querySelector('#newMPrice')?.addEventListener('input', e=>{ state.newMPrice = e.target.value; });
+  app.querySelector('#addMenu')?.addEventListener('click', ()=>{
+    const name=(state.newMName||'').trim(), price=parseFloat(state.newMPrice);
+    if(!name){ state.menuError='Enter an item name.'; render(); return; }
+    if(isNaN(price)){ state.menuError='Enter a price.'; render(); return; }
+    state.menu.push({name, price}); state.settingsOpen=true; state.newMName=''; state.newMPrice=''; state.menuError=null;
+    saveMenu(); render();
+  });
+  app.querySelector('#qrUpload')?.addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file || !assets) return;
+    try{
+      const res = await assets.upload(file);
+      state.qrUrl = res.url; state.settingsOpen=true; saveQr(res.url); render();
+    }catch(err){ console.error('qr upload failed', err); }
+  });
+}
+
+render();
+
+(async () => {
+  try{
+    user = await claude.use('user');
+    if(user){ const w = user.can && user.can('data.write'); if(w===false) state.canWrite=false; }
+    db = await claude.use('db');
+    assets = await claude.use('assets');
+    if(db){
+      const readDoc = snap => { try{ return typeof snap.data==='function' ? snap.data() : (snap.data||snap); }catch(e){ return null; } };
+      db.doc('config/menu').onSnapshot(snap=>{
+        const d = readDoc(snap);
+        if(d && d.items && !state.settingsOpen) state.menu = d.items;
+        else if(d && d.items && state.menu.length===0) state.menu = d.items;
+        render();
+      });
+      db.doc('config/payment').onSnapshot(snap=>{
+        const d = readDoc(snap);
+        if(d && d.qrUrl) state.qrUrl = d.qrUrl;
+        render();
+      });
+      let knownIds = new Set(); let first = true;
+      db.collection('orders').orderBy('createdAt','desc').limit(200).onSnapshot(snap=>{
+        const docs = snap.docs ? snap.docs.map(d=>({id:d.id, ...d.data()})) : (snap.data||[]);
+        if(!first && state.view==='board'){
+          const newOnes = docs.filter(o=>!knownIds.has(o.id));
+          if(newOnes.length) state.banner = newOnes.length===1 ? `New order — ${newOnes[0].name||'Guest'}` : `${newOnes.length} new orders`;
+        }
+        knownIds = new Set(docs.map(o=>o.id));
+        state.orders = docs; first = false; render();
+        if(state.banner) setTimeout(()=>{ state.banner=null; render(); }, 4000);
+      }, err=>console.error('snapshot error', err));
+    }
+  }catch(e){ console.error('init failed', e); }
+  render();
+})();
+</script>
+</body>
+</html>
